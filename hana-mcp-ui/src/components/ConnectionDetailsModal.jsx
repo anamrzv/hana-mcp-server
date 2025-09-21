@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { EnvironmentBadge } from './ui/StatusBadge';
+import { DatabaseTypeBadge } from './ui';
+import { detectDatabaseType, getDatabaseTypeDisplayName } from '../utils/databaseTypes';
 
 const ConnectionDetailsModal = ({ isOpen, onClose, connection }) => {
   useEffect(() => {
@@ -13,6 +15,9 @@ const ConnectionDetailsModal = ({ isOpen, onClose, connection }) => {
   }, [isOpen, onClose]);
 
   if (!isOpen || !connection) return null;
+
+  // Detect database type from connection data
+  const databaseType = detectDatabaseType(connection.env || {});
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -62,6 +67,19 @@ const ConnectionDetailsModal = ({ isOpen, onClose, connection }) => {
           </div>
         </div>
 
+        {/* Database Type Information */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center space-x-3">
+              <DatabaseTypeBadge type={databaseType} size="md" />
+              <div>
+                <p className="text-sm font-medium text-blue-800">Database Type</p>
+                <p className="text-xs text-blue-600">{getDatabaseTypeDisplayName(databaseType)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Connection Configuration */}
         <div className="space-y-4">
           {/* Basic Connection Settings */}
@@ -93,6 +111,31 @@ const ConnectionDetailsModal = ({ isOpen, onClose, connection }) => {
                 </p>
               </div>
             </div>
+            
+            {/* MDC-specific fields - show conditionally */}
+            {(databaseType === 'mdc_tenant' || databaseType === 'mdc_system') && (
+              <div className="mt-4">
+                <h4 className="text-md font-medium text-gray-800 mb-3">MDC Configuration</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {databaseType === 'mdc_tenant' && connection.env?.HANA_DATABASE_NAME && (
+                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <label className="block text-sm font-medium text-amber-800 mb-1">Database Name</label>
+                      <p className="text-sm text-amber-900 font-mono break-all">
+                        {connection.env.HANA_DATABASE_NAME}
+                      </p>
+                    </div>
+                  )}
+                  {connection.env?.HANA_INSTANCE_NUMBER && (
+                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <label className="block text-sm font-medium text-amber-800 mb-1">Instance Number</label>
+                      <p className="text-sm text-amber-900 font-mono">
+                        {connection.env.HANA_INSTANCE_NUMBER}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Security & SSL Configuration */}

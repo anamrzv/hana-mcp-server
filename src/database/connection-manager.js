@@ -53,10 +53,15 @@ class ConnectionManager {
       logger.info('Connecting to HANA database...');
       
       const hanaConfig = config.getHanaConfig();
-      this.client = await createHanaClient(hanaConfig);
+      const dbType = config.getHanaDatabaseType();
+      
+      logger.info(`Detected HANA database type: ${dbType}`);
+      
+      // Pass the full config object so the client can access the methods
+      this.client = await createHanaClient(config);
       
       this.connectionRetries = 0;
-      logger.info('HANA client connected successfully');
+      logger.info(`HANA client connected successfully to ${dbType} database`);
       
       return this.client;
     } catch (error) {
@@ -148,12 +153,15 @@ class ConnectionManager {
    * Get connection status
    */
   getStatus() {
+    const dbType = config.getHanaDatabaseType();
+    
     return {
       connected: !!this.client,
       isConnecting: this.isConnecting,
       lastConnectionAttempt: this.lastConnectionAttempt,
       connectionRetries: this.connectionRetries,
-      maxRetries: this.maxRetries
+      maxRetries: this.maxRetries,
+      databaseType: dbType
     };
   }
 }

@@ -228,7 +228,7 @@ const MainApp = () => {
         setActiveView('claude');
         break;
       default:
-    
+        console.warn(`Unknown quick action: ${actionId}`);
     }
   };
 
@@ -244,7 +244,7 @@ const MainApp = () => {
         toast.success(`Exporting ${selectedItems.length} database configuration(s)`);
         break;
       default:
-    
+        console.warn(`Unknown bulk action: ${action}`);
     }
   };
 
@@ -364,7 +364,7 @@ const MainApp = () => {
   const removeFromClaude = async (serverName) => {
     try {
       setIsLoading(true);
-      await axios.delete(`${API_BASE}/claude/${serverName}`);
+      await axios.delete(`${API_BASE}/claude/${encodeURIComponent(serverName)}`);
       toast.success(`Removed ${serverName} from Claude Desktop`);
       await loadClaudeServers();
       await loadActiveEnvironments();
@@ -427,11 +427,7 @@ const MainApp = () => {
             claudeServers={claudeServers}
             activeEnvironments={activeEnvironments}
             onSetupPath={() => setIsPathSetupOpen(true)}
-            onRemoveConnection={(connection) => {
-              // Handle removing connection from Claude Desktop
-          
-              toast.success(`Removed ${connection.name} from Claude Desktop`);
-            }}
+            onRemoveConnection={removeFromClaude}
             onViewConnection={(connection) => {
               setSelectedConnection(connection);
               setIsConnectionDetailsOpen(true);

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import ClaudeConfigTile from './ClaudeConfigTile';
 import BackupHistoryModal from './BackupHistoryModal';
-import { EnvironmentBadge } from './ui/StatusBadge';
 import { cn } from '../utils/cn';
 import { ArchiveBoxIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
@@ -145,7 +144,7 @@ const ClaudeDesktopView = ({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          onRemoveConnection(server);
+                          onRemoveConnection(server.name);
                         }}
                         className="text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors"
                       >

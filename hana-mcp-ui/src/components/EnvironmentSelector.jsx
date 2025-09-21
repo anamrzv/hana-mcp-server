@@ -63,7 +63,7 @@ const EnvironmentSelector = ({
         {/* Body */}
         <div className="p-6">
           <p className="text-gray-600 mb-6 text-sm">
-            Choose which environment configuration to add to Claude Desktop. Only one environment per database server can be active at a time.
+            Choose which environment configuration to add to Claude Desktop. Multiple environments from different databases can be active simultaneously. Each environment will be added as a separate connection.
           </p>
           
           <div className="space-y-3">

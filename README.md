@@ -225,10 +225,31 @@ For detailed UI documentation, configuration schemas, and advanced features, vis
 | `HANA_USER` | ✅ | Database username | - |
 | `HANA_PASSWORD` | ✅ | Database password | - |
 | `HANA_SCHEMA` | ❌ | Default schema | - |
+| `HANA_INSTANCE_NUMBER` | ❌ | Instance number for MDC connections | - |
+| `HANA_DATABASE_NAME` | ❌ | Database name for MDC tenant connections | - |
+| `HANA_CONNECTION_TYPE` | ❌ | Connection type: `auto`, `single_container`, `mdc_system`, `mdc_tenant` | `auto` |
 | `HANA_SSL` | ❌ | Enable SSL connection | `true` |
 | `HANA_ENCRYPT` | ❌ | Enable encryption | `true` |
 | `HANA_VALIDATE_CERT` | ❌ | Validate SSL certificate | `true` |
 | `LOG_LEVEL` | ❌ | Logging level | `info` |
+
+### Database Type Support
+
+The server supports different HANA database types with auto-detection:
+
+| Database Type | Description | Required Parameters |
+|---------------|-------------|-------------------|
+| `single_container` | Single-container database | `HANA_HOST`, `HANA_PORT`, `HANA_USER`, `HANA_PASSWORD` |
+| `mdc_system` | MDC system database | `HANA_HOST`, `HANA_PORT`, `HANA_INSTANCE_NUMBER`, `HANA_USER`, `HANA_PASSWORD` |
+| `mdc_tenant` | MDC tenant database | `HANA_HOST`, `HANA_PORT`, `HANA_INSTANCE_NUMBER`, `HANA_DATABASE_NAME`, `HANA_USER`, `HANA_PASSWORD` |
+
+### Auto-Detection
+
+When `HANA_CONNECTION_TYPE` is set to `auto` or omitted, the server automatically detects the database type:
+
+- If `HANA_INSTANCE_NUMBER` and `HANA_DATABASE_NAME` are provided → `mdc_tenant`
+- If only `HANA_INSTANCE_NUMBER` is provided → `mdc_system`
+- If neither is provided → `single_container`
 
 ### Default Schema Behavior
 
@@ -259,8 +280,14 @@ Once configured, you can interact with your HANA database using natural language
 You can also run the server directly:
 
 ```bash
-# Start with environment variables
+# Single-container database
 HANA_HOST="your-host" HANA_USER="your-user" HANA_PASSWORD="your-pass" hana-mcp-server
+
+# MDC system database
+HANA_HOST="192.168.13.20" HANA_PORT="31013" HANA_INSTANCE_NUMBER="10" HANA_USER="your-user" HANA_PASSWORD="your-pass" hana-mcp-server
+
+# MDC tenant database
+HANA_HOST="192.168.13.20" HANA_PORT="31013" HANA_INSTANCE_NUMBER="10" HANA_DATABASE_NAME="HQQ" HANA_USER="your-user" HANA_PASSWORD="your-pass" hana-mcp-server
 
 # Or set environment variables first
 export HANA_HOST="your-host"
@@ -515,7 +542,7 @@ We use a standardized PR template. When you create a pull request, GitHub will a
 - **Testing**: MCP Inspector tests, manual testing, and breaking change verification
 - **Checklist**: Code review, documentation, and quality checks
 
-The template is located at `.github/pull_request_template.md`
+The template is located at [`.github/pull_request_template.md`](.github/pull_request_template.md)
 
 ## 📄 License
 

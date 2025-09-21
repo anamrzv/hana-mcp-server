@@ -14,13 +14,36 @@ const DatabaseListView = ({
   onAddDatabase
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [selectedDatabase, setSelectedDatabase] = useState(null);
   const [filters, setFilters] = useState({
     status: 'all',
     sortBy: 'name',
     sortOrder: 'asc'
   });
+
+  // Selection handlers
+  const handleDatabaseSelect = (databaseName) => {
+    setSelectedDatabase(databaseName);
+  };
+
+  const handleEditSelected = () => {
+    if (selectedDatabase && hanaServers[selectedDatabase]) {
+      onEditServer(hanaServers[selectedDatabase]);
+    }
+  };
+
+  const handleAddToClaudeSelected = () => {
+    if (selectedDatabase) {
+      onAddToClaudeServer(selectedDatabase);
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedDatabase) {
+      onDeleteServer(selectedDatabase);
+      setSelectedDatabase(null);
+    }
+  };
 
   // Calculate filter counts
   const filterCounts = useMemo(() => {
@@ -136,7 +159,7 @@ const DatabaseListView = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="text-sm font-medium">
-                  {filterCounts.activeInClaude} database{filterCounts.activeInClaude !== 1 ? 's' : ''} connected to Claude
+                  {filterCounts.activeInClaude} environment{filterCounts.activeInClaude !== 1 ? 's' : ''} connected to Claude
                 </span>
               </div>
             </div>
@@ -164,46 +187,45 @@ const DatabaseListView = ({
         />
       </div>
 
-      {/* View Mode Toggle */}
-      <div className="bg-white rounded-xl border border-gray-100 p-6">
+      {/* Top Bar with Actions */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center bg-gray-100 rounded-xl p-1">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={cn(
-                'px-3 py-1.5 text-sm font-medium rounded-lg transition-all',
-                viewMode === 'grid'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              )}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={cn(
-                'px-3 py-1.5 text-sm font-medium rounded-lg transition-all',
-                viewMode === 'list'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              )}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
-            </button>
+          <div className="flex items-center space-x-4">
+            <span className="text-sm font-medium text-gray-700">
+              {filteredServers.length} of {Object.keys(hanaServers).length} databases
+            </span>
           </div>
           
-          <div className="text-sm text-gray-600">
-            {filteredServers.length} of {Object.keys(hanaServers).length} databases
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={handleEditSelected}
+              disabled={!selectedDatabase}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Edit
+            </button>
+            
+            <button
+              onClick={handleAddToClaudeSelected}
+              disabled={!selectedDatabase}
+              className="px-4 py-2 text-sm font-medium text-white bg-[#86a0ff] border border-[#86a0ff] rounded-lg hover:bg-[#7990e6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add to Claude
+            </button>
+            
+            <button
+              onClick={handleDeleteSelected}
+              disabled={!selectedDatabase}
+              className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Delete
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Database List */}
-      <div className="bg-white rounded-xl border border-gray-150 p-6">
+      {/* Database Table */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {filteredServers.length === 0 ? (
           <div className="text-center py-12">
             <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,32 +246,55 @@ const DatabaseListView = ({
             </button>
           </div>
         ) : (
-          <div className={cn(
-            'space-y-4',
-            viewMode === 'grid' && 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-          )}>
-            <AnimatePresence>
-              {filteredServers.map(([name, server]) => (
-                <motion.div
-                  key={name}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <EnhancedServerCard
-                    name={name}
-                    server={server}
-                    isActive={claudeServers.some(cs => cs.name === name)}
-                    activeEnvironment={activeEnvironments[name]}
-                    onEdit={() => onEditServer(server)}
-                    onAddToClaude={() => onAddToClaudeServer(name)}
-                    onDelete={() => onDeleteServer(name)}
-                  />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
+          <>
+            {/* Table Header */}
+            <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+              <div className="grid grid-cols-12 gap-4 items-center">
+                <div className="col-span-1">
+                  {/* Empty header for radio button column */}
+                </div>
+                <div className="col-span-4">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Database</h3>
+                </div>
+                <div className="col-span-2">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Active Environment</h3>
+                </div>
+                <div className="col-span-2">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Environments</h3>
+                </div>
+                <div className="col-span-3">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Description</h3>
+                </div>
+              </div>
+            </div>
+
+            {/* Database List */}
+            <div className="divide-y divide-gray-200">
+              <AnimatePresence>
+                {filteredServers.map(([name, server], index) => (
+                  <motion.div
+                    key={name}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.2, delay: index * 0.02 }}
+                  >
+                    <EnhancedServerCard
+                      name={name}
+                      server={server}
+                      index={index}
+                      isSelected={selectedDatabase === name}
+                      activeEnvironment={activeEnvironments[name]}
+                      onSelect={handleDatabaseSelect}
+                      onEdit={() => onEditServer(server)}
+                      onAddToClaude={() => onAddToClaudeServer(name)}
+                      onDelete={() => onDeleteServer(name)}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </>
         )}
       </div>
     </div>
