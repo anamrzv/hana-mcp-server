@@ -151,6 +151,41 @@ class Validators {
     logger.debug(`Validating arguments for ${toolName}:`, args);
     return { valid: true };
   }
+
+  /**
+   * Validate configuration for specific database type
+   */
+  static validateForDatabaseType(config) {
+    const dbType = config.getHanaDatabaseType ? config.getHanaDatabaseType() : 'single_container';
+    const errors = [];
+
+    switch (dbType) {
+      case 'mdc_tenant':
+        if (!config.instanceNumber) {
+          errors.push('HANA_INSTANCE_NUMBER is required for MDC Tenant Database');
+        }
+        if (!config.databaseName) {
+          errors.push('HANA_DATABASE_NAME is required for MDC Tenant Database');
+        }
+        break;
+      case 'mdc_system':
+        if (!config.instanceNumber) {
+          errors.push('HANA_INSTANCE_NUMBER is required for MDC System Database');
+        }
+        break;
+      case 'single_container':
+        if (!config.schema) {
+          errors.push('HANA_SCHEMA is recommended for Single-Container Database');
+        }
+        break;
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors: errors,
+      databaseType: dbType
+    };
+  }
 }
 
 module.exports = Validators; 

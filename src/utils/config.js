@@ -17,6 +17,9 @@ class Config {
         user: process.env.HANA_USER,
         password: process.env.HANA_PASSWORD,
         schema: process.env.HANA_SCHEMA,
+        instanceNumber: process.env.HANA_INSTANCE_NUMBER,
+        databaseName: process.env.HANA_DATABASE_NAME,
+        connectionType: process.env.HANA_CONNECTION_TYPE || 'auto',
         ssl: process.env.HANA_SSL !== 'false',
         encrypt: process.env.HANA_ENCRYPT !== 'false',
         validateCert: process.env.HANA_VALIDATE_CERT !== 'false'
@@ -37,6 +40,59 @@ class Config {
     return this.config.server;
   }
 
+  /**
+   * Determine HANA database type based on configuration
+   */
+  getHanaDatabaseType() {
+    const hana = this.config.hana;
+    
+    // Use explicit type if set and not 'auto'
+    if (hana.connectionType && hana.connectionType !== 'auto') {
+      return hana.connectionType;
+    }
+    
+    // Auto-detect based on available parameters
+    if (hana.instanceNumber && hana.databaseName) {
+      return 'mdc_tenant';
+    } else if (hana.instanceNumber && !hana.databaseName) {
+      return 'mdc_system';
+    } else {
+      return 'single_container';
+    }
+  }
+
+  /**
+   * Build connection parameters based on database type
+   */
+  getConnectionParams() {
+    const hana = this.config.hana;
+    const dbType = this.getHanaDatabaseType();
+    
+    const baseParams = {
+      uid: hana.user,
+      pwd: hana.password,
+      encrypt: hana.encrypt,
+      sslValidateCertificate: hana.validateCert
+    };
+
+    // Build connection string based on database type
+    switch (dbType) {
+      case 'mdc_tenant':
+        baseParams.serverNode = `${hana.host}:${hana.port}`;
+        baseParams.databaseName = hana.databaseName;
+        break;
+      case 'mdc_system':
+        baseParams.serverNode = `${hana.host}:${hana.port}`;
+        break;
+      case 'single_container':
+      default:
+        baseParams.serverNode = `${hana.host}:${hana.port}`;
+        break;
+    }
+    
+    return baseParams;
+  }
+
   isHanaConfigured() {
     const hana = this.config.hana;
     return !!(hana.host && hana.user && hana.password);
@@ -50,12 +106,18 @@ class Config {
   // Get configuration info for display (hiding sensitive data)
   getDisplayConfig() {
     const hana = this.config.hana;
+    const dbType = this.getHanaDatabaseType();
+    
     return {
+      databaseType: dbType,
+      connectionType: hana.connectionType,
       host: hana.host || 'NOT SET',
       port: hana.port,
       user: hana.user || 'NOT SET',
       password: hana.password ? 'SET (hidden)' : 'NOT SET',
       schema: hana.schema || 'NOT SET',
+      instanceNumber: hana.instanceNumber || 'NOT SET',
+      databaseName: hana.databaseName || 'NOT SET',
       ssl: hana.ssl,
       encrypt: hana.encrypt,
       validateCert: hana.validateCert
@@ -70,6 +132,9 @@ class Config {
       HANA_USER: process.env.HANA_USER || 'NOT SET',
       HANA_PASSWORD: process.env.HANA_PASSWORD ? 'SET (hidden)' : 'NOT SET',
       HANA_SCHEMA: process.env.HANA_SCHEMA || 'NOT SET',
+      HANA_INSTANCE_NUMBER: process.env.HANA_INSTANCE_NUMBER || 'NOT SET',
+      HANA_DATABASE_NAME: process.env.HANA_DATABASE_NAME || 'NOT SET',
+      HANA_CONNECTION_TYPE: process.env.HANA_CONNECTION_TYPE || 'NOT SET',
       HANA_SSL: process.env.HANA_SSL || 'NOT SET',
       HANA_ENCRYPT: process.env.HANA_ENCRYPT || 'NOT SET',
       HANA_VALIDATE_CERT: process.env.HANA_VALIDATE_CERT || 'NOT SET'
@@ -80,17 +145,33 @@ class Config {
   validate() {
     const hana = this.config.hana;
     const errors = [];
+    const dbType = this.getHanaDatabaseType();
 
+    // Common required fields
     if (!hana.host) errors.push('HANA_HOST is required');
     if (!hana.user) errors.push('HANA_USER is required');
     if (!hana.password) errors.push('HANA_PASSWORD is required');
+
+    // Type-specific validation
+    switch (dbType) {
+      case 'mdc_tenant':
+        if (!hana.instanceNumber) errors.push('HANA_INSTANCE_NUMBER is required for MDC Tenant Database');
+        if (!hana.databaseName) errors.push('HANA_DATABASE_NAME is required for MDC Tenant Database');
+        break;
+      case 'mdc_system':
+        if (!hana.instanceNumber) errors.push('HANA_INSTANCE_NUMBER is required for MDC System Database');
+        break;
+      case 'single_container':
+        if (!hana.schema) errors.push('HANA_SCHEMA is recommended for Single-Container Database');
+        break;
+    }
 
     if (errors.length > 0) {
       logger.warn('Configuration validation failed:', errors);
       return false;
     }
 
-    logger.info('Configuration validation passed');
+    logger.info(`Configuration validation passed for ${dbType} database type`);
     return true;
   }
 

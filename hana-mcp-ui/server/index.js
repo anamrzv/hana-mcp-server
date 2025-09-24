@@ -25,8 +25,8 @@ const BACKUPS_DIR = join(DATA_DIR, 'backups');
 const BACKUP_HISTORY_FILE = join(DATA_DIR, 'backup-history.json');
 
 // Ensure data directory exists
-await fs.ensureDir(DATA_DIR);
-await fs.ensureDir(BACKUPS_DIR);
+fs.ensureDirSync(DATA_DIR);
+fs.ensureDirSync(BACKUPS_DIR);
 
 // Default Claude config paths by OS
 const getDefaultClaudeConfigPath = () => {
@@ -131,6 +131,22 @@ const isHanaMcpServer = (server) => {
   return hasHanaHost && hasHanaUser && hasHanaSchema;
 };
 
+// Helper function to create composite server name
+const createCompositeServerName = (serverName, environment) => {
+  return `${serverName} - ${environment}`;
+};
+
+// Helper function to parse composite server name
+const parseCompositeServerName = (compositeName) => {
+  const parts = compositeName.split(' - ');
+  if (parts.length >= 2) {
+    const environment = parts.pop(); // Last part is environment
+    const serverName = parts.join(' - '); // Everything else is server name
+    return { serverName, environment };
+  }
+  return { serverName: compositeName, environment: null };
+};
+
 // Helper function to filter only HANA MCP servers from Claude config
 const filterHanaMcpServers = (mcpServers) => {
   const hanaServers = {};
@@ -151,14 +167,7 @@ const mergeWithPreservation = (originalConfig, hanaServers) => {
   // Start with original mcpServers
   newConfig.mcpServers = { ...originalConfig.mcpServers };
   
-  // Remove existing HANA servers
-  for (const [name, server] of Object.entries(newConfig.mcpServers || {})) {
-    if (isHanaMcpServer(server)) {
-      delete newConfig.mcpServers[name];
-    }
-  }
-  
-  // Add new HANA servers
+  // add new HANA servers
   newConfig.mcpServers = {
     ...newConfig.mcpServers,
     ...hanaServers
@@ -413,14 +422,26 @@ app.post('/api/apply-to-claude', async (req, res) => {
       return res.status(404).json({ error: 'Server not found' });
     }
 
-    const envConfig = server.environments?.[environment];
+    // Find environment with case-insensitive matching
+    let envConfig = server.environments?.[environment];
+    let actualEnvironmentName = environment;
+    
     if (!envConfig) {
-      return res.status(404).json({ error: 'Environment not found' });
+      // Try case-insensitive matching
+      const envKeys = Object.keys(server.environments || {});
+      const matchingKey = envKeys.find(key => key.toLowerCase() === environment.toLowerCase());
+      
+      if (matchingKey) {
+        envConfig = server.environments[matchingKey];
+        actualEnvironmentName = matchingKey;
+      } else {
+        return res.status(404).json({ error: 'Environment not found' });
+      }
     }
 
     const claudeConfig = await loadClaudeConfig(claudeConfigPath);
     
-    // Create new HANA server entry
+    // create a new HANA server
     const newHanaServer = {
       [serverName]: {
         command: 'hana-mcp-server',
@@ -433,7 +454,7 @@ app.post('/api/apply-to-claude', async (req, res) => {
 
     await saveClaudeConfig(claudeConfigPath, updatedConfig);
 
-    res.json({ success: true, serverName, environment });
+    res.json({ success: true, serverName, environment: actualEnvironmentName });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -488,9 +509,9 @@ app.get('/api/claude', async (req, res) => {
     // Filter only HANA MCP servers
     const hanaServers = filterHanaMcpServers(claudeConfig.mcpServers);
 
-    for (const [name, server] of Object.entries(hanaServers)) {
+    for (const [serverName, server] of Object.entries(hanaServers)) {
       const serverData = {
-        name: name,
+        name: serverName,
         environment: server.env?.ENVIRONMENT || 'Development',
         env: server.env || {}
       };
@@ -521,16 +542,10 @@ app.get('/api/claude/active-environments', async (req, res) => {
     // Filter only HANA MCP servers
     const hanaServers = filterHanaMcpServers(claudeConfig.mcpServers);
 
-    for (const [name, claudeServer] of Object.entries(hanaServers)) {
-      if (servers[name]) {
-        // Find which environment matches the Claude config
-        const localServer = servers[name];
-        for (const [envName, envConfig] of Object.entries(localServer.environments || {})) {
-          if (JSON.stringify(envConfig) === JSON.stringify(claudeServer.env)) {
-            activeEnvironments[name] = envName;
-            break;
-          }
-        }
+    for (const [serverName, claudeServer] of Object.entries(hanaServers)) {
+      if (servers[serverName]) {
+        // Store the active environment for this server
+        activeEnvironments[serverName] = claudeServer.env?.ENVIRONMENT || 'Development';
       }
     }
 

@@ -98,7 +98,7 @@ const VerticalSidebar = ({
             </div>
           </motion.div>
           <motion.div 
-            className="flex justify-center w-full"
+            className="flex flex-col items-center w-full space-y-2"
             initial={false}
             animate={{ 
               opacity: collapsed ? 1 : 0,
@@ -115,10 +115,31 @@ const VerticalSidebar = ({
               alt="HANA MCP Logo" 
               className="w-6 h-6"
             />
+            <motion.button
+              onClick={() => setCollapsed(!collapsed)}
+              className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Expand sidebar"
+            >
+              <motion.svg 
+                className="w-4 h-4 text-gray-500" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+                animate={{ rotate: collapsed ? 180 : 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              </motion.svg>
+            </motion.button>
           </motion.div>
           <motion.button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+            className={cn(
+              "p-1.5 rounded-lg hover:bg-gray-100 transition-colors",
+              collapsed && "hidden"
+            )}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -238,6 +259,7 @@ const VerticalSidebar = ({
            Add Database
         </motion.button>
       </motion.div>
+
     </motion.div>
   );
 };

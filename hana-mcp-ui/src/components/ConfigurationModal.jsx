@@ -2,6 +2,11 @@ import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { XMarkIcon, ServerIcon, PlusIcon, PencilIcon, ExclamationTriangleIcon, TrashIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
+import { 
+  detectDatabaseType, 
+  shouldShowMDCFields,
+  validateForDatabaseType 
+} from '../utils/databaseTypes'
 
 const ConfigurationModal = ({
   isOpen,
@@ -53,18 +58,14 @@ const ConfigurationModal = ({
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [isOpen, onClose])
 
-  // Validation function for mandatory fields
+  // validation function with database type support
   const validateEnvironment = (envId, envData) => {
-    const errors = {}
-    const requiredFields = ['HANA_HOST', 'HANA_USER', 'HANA_PASSWORD', 'HANA_SCHEMA']
+    const detectedType = detectDatabaseType(envData)
+    const manualType = envData.HANA_CONNECTION_TYPE || 'auto'
+    const dbType = manualType === 'auto' ? detectedType : manualType
     
-    requiredFields.forEach(field => {
-      if (!envData[field] || envData[field].trim() === '') {
-        errors[field] = `${field.replace('HANA_', '')} is required`
-      }
-    })
-    
-    return errors
+    const validation = validateForDatabaseType(envData, dbType)
+    return validation.errors
   }
 
   // Validate all environments
@@ -243,15 +244,7 @@ const ConfigurationModal = ({
                       : 'text-gray-400'
                   }`}
                 />
-                {server && (
-                  <p className='text-sm text-gray-500 mt-2 flex items-center gap-2'>
-                    <svg className='w-4 h-4 text-blue-500' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
-                    </svg>
-                    Server name is used as a unique identifier and cannot be modified after creation. 
-                    To change the name, you'll need to create a new server configuration.
-                  </p>
-                )}
+          
               </div>
               <div>
                 <label className='block text-base font-semibold text-gray-800 mb-3'>
@@ -554,6 +547,33 @@ const EnvironmentForm = ({ environment, data = {}, onChange, errors = {} }) => {
   // Ensure ENVIRONMENT parameter is automatically set
   const environmentValue = data.ENVIRONMENT || getEnvironmentDisplayName(environment)
   
+  // Database type state - default to single_container if not specified
+  const [manualType, setManualType] = useState(data.HANA_CONNECTION_TYPE || 'single_container')
+  
+  // Note: We no longer use auto-detect in the UI, users must explicitly select database type
+  
+  // Database type options for radio buttons
+  const databaseTypeOptions = [
+    { 
+      label: 'Single-Container Database', 
+      value: 'single_container',
+      description: 'Basic HANA database - HOST:PORT connection',
+      required: ['HOST', 'PORT', 'USER', 'PASSWORD', 'SCHEMA']
+    },
+    { 
+      label: 'MDC System Database', 
+      value: 'mdc_system',
+      description: 'Multi-tenant system database - HOST:PORT;INSTANCE',
+      required: ['HOST', 'PORT', 'USER', 'PASSWORD', 'INSTANCE_NUMBER']
+    },
+    { 
+      label: 'MDC Tenant Database', 
+      value: 'mdc_tenant',
+      description: 'Multi-tenant tenant database - HOST:PORT + DATABASE_NAME',
+      required: ['HOST', 'PORT', 'USER', 'PASSWORD', 'INSTANCE_NUMBER', 'DATABASE_NAME']
+    }
+  ]
+  
   // Auto-set default values when component renders
   useEffect(() => {
     const defaults = {
@@ -562,6 +582,7 @@ const EnvironmentForm = ({ environment, data = {}, onChange, errors = {} }) => {
       HANA_SSL: 'true',
       HANA_ENCRYPT: 'true',
       HANA_VALIDATE_CERT: 'true',
+      HANA_CONNECTION_TYPE: 'auto',
       LOG_LEVEL: 'info',
       ENABLE_FILE_LOGGING: 'true',
       ENABLE_CONSOLE_LOGGING: 'false'
@@ -574,6 +595,13 @@ const EnvironmentForm = ({ environment, data = {}, onChange, errors = {} }) => {
       }
     })
   }, [environment, data, environmentValue, onChange])
+  
+  // Handle connection type change
+  const handleConnectionTypeChange = (e) => {
+    const newType = e.target.value
+    setManualType(newType)
+    onChange(environment, 'HANA_CONNECTION_TYPE', newType)
+  }
 
   // Helper function to render input field with error handling
   const renderInputField = (field, label, type = 'text', placeholder = '', required = false) => {
@@ -609,6 +637,7 @@ const EnvironmentForm = ({ environment, data = {}, onChange, errors = {} }) => {
 
   return (
     <div className='space-y-8'>
+
       {/* Connection Settings */}
       <div>
         <h4 className='text-lg font-bold text-gray-900 mb-6'>Connection Settings</h4>
@@ -617,6 +646,72 @@ const EnvironmentForm = ({ environment, data = {}, onChange, errors = {} }) => {
           {renderInputField('HANA_PORT', 'Port', 'number', '443')}
           {renderInputField('HANA_SCHEMA', 'Schema', 'text', 'your-schema', true)}
         </div>
+        
+        {/* Database Type Selection */}
+        <div className='mt-6'>
+          <label className='block text-base font-semibold mb-3 text-gray-800'>
+            Database Type
+          </label>
+          <div className='space-y-3'>
+            {databaseTypeOptions.map((option) => (
+              <label
+                key={option.value}
+                className={`
+                  flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
+                  ${manualType === option.value 
+                    ? 'border-[#86a0ff] bg-blue-50 shadow-md' 
+                    : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                  }
+                `}
+              >
+                <input
+                  type="radio"
+                  name="databaseType"
+                  value={option.value}
+                  checked={manualType === option.value}
+                  onChange={handleConnectionTypeChange}
+                  className="mt-1 w-4 h-4 text-[#86a0ff] border-gray-300 focus:ring-[#86a0ff] focus:ring-2"
+                />
+                <div className="flex-1">
+                  <div className="mb-1">
+                    <span className="font-semibold text-gray-900">{option.label}</span>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2">{option.description}</p>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Required fields:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {option.required.map((field) => (
+                        <span 
+                          key={field}
+                          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700"
+                        >
+                          {field.replace('HANA_', '')}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+        
+        {/* MDC-specific fields - show conditionally */}
+        {shouldShowMDCFields(detectDatabaseType(data), manualType) && (
+          <div className='mt-6'>
+            <h5 className='text-base font-semibold text-gray-800 mb-2'>MDC Configuration</h5>
+            <p className='text-sm text-gray-600 mb-4'>
+              {manualType === 'mdc_system' 
+                ? 'MDC System Database requires instance number for connection string format: HOST:PORT;INSTANCE'
+                : 'MDC Tenant Database requires both instance number and database name for connection'
+              }
+            </p>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+              {renderInputField('HANA_INSTANCE_NUMBER', 'Instance Number', 'number', '10', true)}
+              {manualType === 'mdc_tenant' && renderInputField('HANA_DATABASE_NAME', 'Database Name', 'text', 'HQQ', true)}
+            </div>
+          </div>
+        )}
         
         <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mt-6'>
           {renderInputField('HANA_USER', 'Username', 'text', 'your-username', true)}
@@ -649,24 +744,9 @@ const EnvironmentForm = ({ environment, data = {}, onChange, errors = {} }) => {
         </div>
       </div>
 
-      {/* Environment & Logging Configuration */}
+      {/* Logging Configuration */}
       <div>
-        <h4 className='text-lg font-bold text-gray-900 mb-6'>Environment & Logging Configuration</h4>
-        
-        {/* Environment Parameter Display */}
-        <div className='mb-6 p-5 bg-gray-50 rounded-xl border border-gray-200'>
-          <div className='flex items-center justify-between'>
-            <div>
-              <label className='block text-base font-semibold text-gray-800'>Environment Parameter</label>
-              <p className='text-sm text-gray-600 mt-1 font-medium'>Automatically included in configuration</p>
-            </div>
-            <div className='text-right'>
-              <span className='inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-[#86a0ff]/10 text-[#86a0ff] border border-[#86a0ff]/20'>
-                ENVIRONMENT: {environmentValue}
-              </span>
-            </div>
-          </div>
-        </div>
+        <h4 className='text-lg font-bold text-gray-900 mb-6'>Logging Configuration</h4>
 
         <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
           <div>

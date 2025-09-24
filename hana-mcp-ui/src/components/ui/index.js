@@ -7,5 +7,6 @@ export { default as LoadingSpinner, LoadingOverlay } from './LoadingSpinner'
 export { default as MetricCard } from './MetricCard'
 export { default as IconComponent } from './IconComponent'
 export { default as Tabs } from './Tabs'
+export { default as DatabaseTypeBadge } from './DatabaseTypeBadge'
 export { default as PathConfigModal } from '../PathConfigModal'
 

@@ -13,20 +13,19 @@ async function createHanaClient(config) {
     // Create connection
     const connection = hana.createConnection();
     
-    // Connection parameters
-    const connectionParams = {
-      serverNode: `${config.host}:${config.port}`,
-      uid: config.user,
-      pwd: config.password,
-      encrypt: config.encrypt !== false, // Default to true
-      sslValidateCertificate: config.validateCert !== false, // Default to true
-      ...config.additionalParams
-    };
+    // Use connection parameter building if available
+    const connectionParams = config.getConnectionParams ? 
+      config.getConnectionParams() : 
+      buildLegacyConnectionParams(config);
+    
+    // Log database type information
+    const dbType = config.getHanaDatabaseType ? config.getHanaDatabaseType() : 'single_container';
+    log(`Connecting to HANA ${dbType} database...`);
     
     // Connect to HANA
     await connect(connection, connectionParams);
     
-    log('Successfully connected to HANA database');
+    log(`Successfully connected to HANA ${dbType} database`);
     
     // Return client wrapper with utility methods
     return {
@@ -84,9 +83,23 @@ async function createHanaClient(config) {
       }
     };
   } catch (error) {
-    log('Failed to create HANA client:', error);
+    log(`Failed to create HANA client: ${error.message}`);
     throw error;
   }
+}
+
+/**
+ * Build legacy connection parameters for backward compatibility
+ */
+function buildLegacyConnectionParams(config) {
+  return {
+    serverNode: `${config.host}:${config.port}`,
+    uid: config.user,
+    pwd: config.password,
+    encrypt: config.encrypt !== false,
+    sslValidateCertificate: config.validateCert !== false,
+    ...config.additionalParams
+  };
 }
 
 /**

@@ -1,6 +1,6 @@
 {
   "name": "hana-mcp-ui",
-  "version": "1.0.7",
+  "version": "1.0.9",
   "description": "UI for managing HANA MCP server configurations with Claude Desktop integration",
   "type": "module",
   "main": "bin/cli.js",

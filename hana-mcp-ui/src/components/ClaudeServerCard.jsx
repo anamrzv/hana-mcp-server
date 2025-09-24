@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'  
-import { EnvironmentBadge } from './ui'
+import { EnvironmentBadge, DatabaseTypeBadge } from './ui'
+import { detectDatabaseType, getDatabaseTypeDisplayName } from '../utils/databaseTypes'
 
 const ClaudeServerCard = ({ 
   server, 
@@ -7,6 +8,9 @@ const ClaudeServerCard = ({
   activeEnvironment, 
   onRemove 
 }) => {
+  // Detect database type from server environment data
+  const databaseType = detectDatabaseType(server.env || {})
+  
   return (
     <motion.div
       className="bg-gray-50 border border-gray-100 rounded-lg p-3 hover:bg-gray-100 transition-all duration-200"
@@ -21,6 +25,7 @@ const ClaudeServerCard = ({
           <div className="flex items-center gap-2 mb-1">
             <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
             <h4 className="text-sm font-medium text-gray-900 truncate">{server.name}</h4>
+            <DatabaseTypeBadge type={databaseType} size="xs" />
           </div>
           
           {activeEnvironment && (
@@ -47,6 +52,25 @@ const ClaudeServerCard = ({
             {server.env.HANA_HOST}
           </span>
         </div>
+        
+        {/* Show MDC-specific info when applicable */}
+        {databaseType === 'mdc_tenant' && server.env.HANA_DATABASE_NAME && (
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-500">Database:</span>
+            <span className="font-mono text-gray-700 bg-white/70 px-1.5 py-0.5 rounded text-xs truncate max-w-[100px]" title={server.env.HANA_DATABASE_NAME}>
+              {server.env.HANA_DATABASE_NAME}
+            </span>
+          </div>
+        )}
+        
+        {databaseType === 'mdc_system' && server.env.HANA_INSTANCE_NUMBER && (
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-500">Instance:</span>
+            <span className="font-mono text-gray-700 bg-white/70 px-1.5 py-0.5 rounded text-xs">
+              {server.env.HANA_INSTANCE_NUMBER}
+            </span>
+          </div>
+        )}
         
         <div className="flex items-center justify-between text-xs">
           <span className="text-gray-500">Schema:</span>
