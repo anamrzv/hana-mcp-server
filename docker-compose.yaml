@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  hana-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hana-mcp-server
+    restart: unless-stopped
+    environment:
+      # HANA Connection Settings
+      HANA_HOST: ${HANA_HOST}
+      HANA_PORT: ${HANA_PORT:-443}
+      HANA_USER: ${HANA_USER}
+      HANA_PASSWORD: ${HANA_PASSWORD}
+      HANA_SCHEMA: ${HANA_SCHEMA}
+      
+      # HANA SSL/TLS Settings
+      HANA_SSL: ${HANA_SSL:-true}
+      HANA_ENCRYPT: ${HANA_ENCRYPT:-true}
+      HANA_VALIDATE_CERT: ${HANA_VALIDATE_CERT:-true}
+      
+      # HANA Connection Type and Database
+      HANA_CONNECTION_TYPE: ${HANA_CONNECTION_TYPE:-auto}
+      HANA_INSTANCE_NUMBER: ${HANA_INSTANCE_NUMBER:-00}
+      HANA_DATABASE_NAME: ${HANA_DATABASE_NAME:-H00}
+      
+      # Logging Settings
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ENABLE_FILE_LOGGING: ${ENABLE_FILE_LOGGING:-true}
+      ENABLE_CONSOLE_LOGGING: ${ENABLE_CONSOLE_LOGGING:-false}
+    
+    volumes:
+      # Mount logs directory to persist logs
+      - ./logs:/app/logs
+      # Optionally mount config if needed
+      # - ./config:/app/config
+    
+    ports:
+      - "3000:3000"
+    
+    # Network configuration
+    networks:
+      - hana-network
+
+networks:
+  hana-network:
+    driver: bridge
