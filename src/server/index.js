@@ -2,18 +2,22 @@
 
 /**
  * Main HANA MCP Server Entry Point
+ * Supports both STDIO and HTTP transports
  */
 
 const readline = require('readline');
 const { logger } = require('../utils/logger');
 const { lifecycleManager } = require('./lifecycle-manager');
 const MCPHandler = require('./mcp-handler');
+const HTTPServer = require('./http-server');
 const { ERROR_CODES } = require('../constants/mcp-constants');
 
 class MCPServer {
   constructor() {
     this.rl = null;
+    this.httpServer = null;
     this.isShuttingDown = false;
+    this.transport = process.env.MCP_TRANSPORT || 'http'; // 'http' or 'stdio'
   }
 
   /**
@@ -25,8 +29,16 @@ class MCPServer {
       lifecycleManager.setupEventHandlers();
       await lifecycleManager.start();
 
-      // Setup readline interface for STDIO
-      this.setupReadline();
+      // Start appropriate transport
+      if (this.transport === 'http') {
+        this.httpServer = new HTTPServer();
+        await this.httpServer.start();
+        logger.info('Server started with HTTP transport');
+      } else {
+        // STDIO transport (default)
+        this.setupReadline();
+        logger.info('Server started with STDIO transport');
+      }
 
       logger.info('Server ready for requests');
     } catch (error) {
@@ -117,6 +129,10 @@ class MCPServer {
     
     if (this.rl) {
       this.rl.close();
+    }
+    
+    if (this.httpServer) {
+      await this.httpServer.shutdown();
     }
     
     await lifecycleManager.shutdown();
