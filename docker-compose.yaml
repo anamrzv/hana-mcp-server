@@ -37,7 +37,7 @@ services:
       # - ./config:/app/config
     
     ports:
-      - "3000:3000"
+      - "3535:3000"
     
     # Network configuration
     networks:
