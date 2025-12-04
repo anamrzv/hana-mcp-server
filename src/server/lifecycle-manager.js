@@ -109,16 +109,17 @@ class LifecycleManager {
       await this.shutdown();
     });
 
-    // Handle uncaught exceptions
+    // Handle uncaught exceptions - log but don't shutdown
     process.on('uncaughtException', (error) => {
       logger.error('Uncaught exception:', error.message);
-      this.shutdown();
+      logger.error('Stack trace:', error.stack);
+      // Don't shutdown on exception, only log it
     });
 
-    // Handle unhandled promise rejections
+    // Handle unhandled promise rejections - log but don't shutdown
     process.on('unhandledRejection', (reason, promise) => {
       logger.error('Unhandled promise rejection:', reason);
-      this.shutdown();
+      // Don't shutdown on rejection, only log it
     });
   }
 

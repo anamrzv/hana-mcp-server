@@ -95,6 +95,7 @@ class ConnectionManager {
       const result = await client.query(testQuery);
       
       if (result && result.length > 0) {
+        logger.info('Connection test successful');
         return { 
           success: true, 
           result: result[0].TEST_VALUE 
@@ -107,6 +108,7 @@ class ConnectionManager {
       }
     } catch (error) {
       logger.error('Connection test failed:', error.message);
+      // Don't close connection on test failure
       return { 
         success: false, 
         error: error.message 
