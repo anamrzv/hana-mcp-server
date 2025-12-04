@@ -205,4 +205,6 @@ class MCPHandler {
 
     return filtered;
   }
-} 
+}
+
+module.exports = MCPHandler; 
