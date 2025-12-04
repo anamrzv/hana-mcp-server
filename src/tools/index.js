@@ -59,14 +59,38 @@ class ToolRegistry {
     }
 
     try {
-      logger.debug(`Executing tool: ${name}`, args);
-      const result = await implementation(args);
+      // Filter args to only include schema properties
+      const tool = this.getTool(name);
+      const filteredArgs = this.filterToolArgs(args, tool.inputSchema);
+      
+      logger.debug(`Executing tool: ${name}`, filteredArgs);
+      const result = await implementation(filteredArgs);
       logger.debug(`Tool ${name} executed successfully`);
       return result;
     } catch (error) {
       logger.error(`Tool ${name} execution failed:`, error.message);
       throw error;
     }
+  }
+
+  /**
+   * Filter arguments to only include schema properties
+   */
+  static filterToolArgs(args, schema) {
+    if (!args || !schema || !schema.properties) {
+      return {};
+    }
+
+    const filtered = {};
+    const allowedProps = Object.keys(schema.properties);
+    
+    for (const key of allowedProps) {
+      if (key in args) {
+        filtered[key] = args[key];
+      }
+    }
+
+    return filtered;
   }
 
   /**
