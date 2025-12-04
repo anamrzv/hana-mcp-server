@@ -79,21 +79,25 @@ class MCPHandler {
   static async handleToolsCall(id, params) {
     const { name, arguments: args } = params;
     
-    logger.tool(name, args);
-    
-    // Validate tool exists
+    // Validate tool exists first
     if (!ToolRegistry.hasTool(name)) {
       return this.createErrorResponse(id, ERROR_CODES.TOOL_NOT_FOUND, `Tool not found: ${name}`);
     }
     
+    // Filter arguments to only include schema properties
+    const tool = ToolRegistry.getTool(name);
+    const filteredArgs = this.filterToolArguments(args, tool.inputSchema);
+    
+    logger.tool(name, filteredArgs);
+    
     // Validate tool arguments
-    const validation = ToolRegistry.validateToolArgs(name, args);
+    const validation = ToolRegistry.validateToolArgs(name, filteredArgs);
     if (!validation.valid) {
       return this.createErrorResponse(id, ERROR_CODES.INVALID_PARAMS, validation.error);
     }
     
     try {
-      const result = await ToolRegistry.executeTool(name, args);
+      const result = await ToolRegistry.executeTool(name, filteredArgs);
       
       return {
         jsonrpc: '2.0',
@@ -181,6 +185,24 @@ class MCPHandler {
 
     return { valid: true };
   }
-}
 
-module.exports = MCPHandler; 
+  /**
+   * Filter tool arguments to only include schema properties
+   */
+  static filterToolArguments(args, schema) {
+    if (!args || !schema || !schema.properties) {
+      return {};
+    }
+
+    const filtered = {};
+    const allowedProps = Object.keys(schema.properties);
+    
+    for (const key of allowedProps) {
+      if (key in args) {
+        filtered[key] = args[key];
+      }
+    }
+
+    return filtered;
+  }
+} 
