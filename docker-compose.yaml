@@ -8,7 +8,7 @@ services:
     container_name: hana-mcp-server
     restart: unless-stopped
     ports:
-      - "${HTTP_PORT:-4000}:4000"
+      - "${HTTP_PORT:-3535}:3535"
     environment:
       # HANA Connection Settings
       HANA_HOST: ${HANA_HOST}
@@ -21,7 +21,7 @@ services:
       HANA_VALIDATE_CERT: ${HANA_VALIDATE_CERT:-true}
       
       # Server Settings
-      HTTP_PORT: ${HTTP_PORT:-4000}
+      HTTP_PORT: ${HTTP_PORT:-3535}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     dns:
       - 8.8.8.8
