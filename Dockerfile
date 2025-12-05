@@ -6,24 +6,20 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
+COPY tsconfig.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci
 
-# Copy application files
-COPY . .
+# Copy source code
+COPY src ./src
 
-# Create logs directory
-RUN mkdir -p logs
+# Build TypeScript
+RUN npm run build
 
-# Expose port if needed (MCP servers typically use stdio, but good to have)
-EXPOSE 3000
-
-# Set default environment variables (can be overridden)
+# Set default environment variables
 ENV NODE_ENV=production \
-    LOG_LEVEL=info \
-    ENABLE_FILE_LOGGING=true \
-    ENABLE_CONSOLE_LOGGING=false
+    LOG_LEVEL=info
 
 # Run the application
-CMD ["node", "hana-mcp-server.js"]
+CMD ["npm", "start"]

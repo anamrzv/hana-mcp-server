@@ -9,37 +9,23 @@ services:
     restart: unless-stopped
     environment:
       # HANA Connection Settings
-      HANA_HOST: ${HANA_HOST}
+      HANA_HOST: ${HANA_HOST:-your-hana-host.com}
       HANA_PORT: ${HANA_PORT:-443}
-      HANA_USER: ${HANA_USER}
-      HANA_PASSWORD: ${HANA_PASSWORD}
-      HANA_SCHEMA: ${HANA_SCHEMA}
+      HANA_USER: ${HANA_USER:-your-username}
+      HANA_PASSWORD: ${HANA_PASSWORD:-your-password}
       
       # HANA SSL/TLS Settings
-      HANA_SSL: ${HANA_SSL:-true}
       HANA_ENCRYPT: ${HANA_ENCRYPT:-true}
       HANA_VALIDATE_CERT: ${HANA_VALIDATE_CERT:-true}
       
-      # HANA Connection Type and Database
-      HANA_CONNECTION_TYPE: ${HANA_CONNECTION_TYPE:-auto}
-      HANA_INSTANCE_NUMBER: ${HANA_INSTANCE_NUMBER:-00}
-      HANA_DATABASE_NAME: ${HANA_DATABASE_NAME:-H00}
-      
-      # Logging Settings
+      # Server Settings
+      HTTP_PORT: ${HTTP_PORT:-3000}
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      ENABLE_FILE_LOGGING: ${ENABLE_FILE_LOGGING:-true}
-      ENABLE_CONSOLE_LOGGING: ${ENABLE_CONSOLE_LOGGING:-false}
     
     volumes:
-      # Mount logs directory to persist logs
+      # Mount logs directory to persist logs if needed
       - ./logs:/app/logs
-      # Optionally mount config if needed
-      # - ./config:/app/config
     
-    ports:
-      - "3535:3000"
-    
-    # Network configuration
     networks:
       - hana-network
 

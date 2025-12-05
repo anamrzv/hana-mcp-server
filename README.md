@@ -1,53 +1,104 @@
 # HANA MCP Server
 
-[![npm version](https://img.shields.io/npm/v/hana-mcp-server.svg)](https://www.npmjs.com/package/hana-mcp-server)
-[![npm downloads](https://img.shields.io/npm/dy/hana-mcp-server.svg)](https://www.npmjs.com/package/hana-mcp-server)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![MCP](https://badge.mcpx.dev?type=server)](https://modelcontextprotocol.io/)
+A lightweight Model Context Protocol (MCP) server for SAP HANA database integration using HTTP Streamable transport.
 
-> **Model Context Protocol (MCP) server for seamless SAP HANA database integration with AI agents and development tools.**
+## Setup
 
-## 🚀 Quick Start
+### 1. Installation
 
-### 1. Install
 ```bash
-npm install -g hana-mcp-server
+npm install
+npm run build
 ```
 
-### 2. Configure Claude Desktop
+### 2. Configuration
 
-Update your Claude Desktop config file:
+Create a `.env` file:
 
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`  
-**Windows**: `%APPDATA%\claude\claude_desktop_config.json`  
-**Linux**: `~/.config/claude/claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "HANA Database": {
-      "command": "hana-mcp-server",
-      "env": {
-        "HANA_HOST": "your-hana-host.com",
-        "HANA_PORT": "443",
-        "HANA_USER": "your-username",
-        "HANA_PASSWORD": "your-password",
-        "HANA_SCHEMA": "your-schema",
-        "HANA_SSL": "true",
-        "HANA_ENCRYPT": "true",
-        "HANA_VALIDATE_CERT": "true",
-        "HANA_CONNECTION_TYPE": "auto",
-        "HANA_INSTANCE_NUMBER": "10",
-        "HANA_DATABASE_NAME": "HQQ",
-        "LOG_LEVEL": "info",
-        "ENABLE_FILE_LOGGING": "true",
-        "ENABLE_CONSOLE_LOGGING": "false"
-      }
-    }
-  }
-}
+```bash
+cp .env.example .env
 ```
+
+Edit `.env` with your HANA credentials:
+
+```env
+HANA_HOST=your-hana-host.com
+HANA_PORT=443
+HANA_USER=your-username
+HANA_PASSWORD=your-password
+HANA_ENCRYPT=true
+HANA_VALIDATE_CERT=true
+HTTP_PORT=3000
+LOG_LEVEL=info
+```
+
+### 3. Running
+
+```bash
+npm start
+```
+
+The server will start on HTTP at `http://0.0.0.0:3000` with streamable transport.
+
+## API Endpoints
+
+- `GET /` or `GET /mcp` - Streamable connection (NDJSON format)
+- `POST /` or `POST /mcp` - JSON-RPC requests
+- `GET /health` - Health check
+
+## Tools
+
+- `test-connection` - Test connection to HANA
+- `list-schemas` - List all schemas
+- `list-tables` - List tables in a schema
+- `list-columns` - List columns in a table
+- `execute-query` - Execute SELECT queries
+
+## Docker
+
+```bash
+docker-compose up
+```
+
+Or build manually:
+
+```bash
+docker build -t hana-mcp-server .
+docker run -e HANA_HOST=your-host -e HANA_USER=user -e HANA_PASSWORD=pass -p 3000:3000 hana-mcp-server
+```
+
+## Testing
+
+Test the server with curl:
+
+```bash
+# Health check
+curl http://localhost:3000/health
+
+# Streamable connection (will stream NDJSON)
+curl -N http://localhost:3000/mcp
+
+# JSON-RPC request
+curl -X POST http://localhost:3000/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/list",
+    "params": {}
+  }'
+```
+
+## Architecture
+
+- **HTTP Streamable Transport**: Custom transport using NDJSON over HTTP for bidirectional streaming
+- **TypeScript SDK**: Built on official MCP TypeScript SDK
+- **HANA Client**: Native connection to SAP HANA
+- **Universal**: Works with any MCP client
+
+## License
+
+MIT
 
 ### 3. Restart Claude Desktop
 

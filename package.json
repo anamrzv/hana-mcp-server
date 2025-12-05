@@ -1,67 +1,37 @@
 {
   "name": "hana-mcp-server",
-  "version": "0.1.4",
-  "description": "🚀 Easy-to-use MCP server for SAP HANA database integration with AI agents like Claude Desktop. Connect to HANA databases with natural language queries.",
-  "main": "hana-mcp-server.js",
-  "bin": {
-    "hana-mcp-server": "hana-mcp-server.js"
-  },
+  "version": "1.0.0",
+  "description": "SAP HANA MCP Server - Model Context Protocol implementation for HANA database",
+  "main": "dist/index.js",
+  "type": "module",
   "scripts": {
-    "start": "node hana-mcp-server.js",
-    "dev": "nodemon hana-mcp-server.js",
-    "test": "node tests/automated/test-mcp-inspector.js"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "clean": "rm -rf dist"
   },
   "keywords": [
     "sap",
     "hana",
     "mcp",
-    "btp",
-    "hana-mcp",
-    "mcp-server",
-    "database",
-    "ai",
-    "model",
-    "context",
-    "protocol",
-    "claude",
-    "anthropic",
-    "enterprise",
-    "sql",
-    "query"
+    "model-context-protocol"
   ],
-  "author": {
-    "name": "HANA MCP Server Contributors",
-    "email": "support@hana-mcp-server.com"
-  },
+  "author": "HANA MCP Contributors",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/hatrigt/hana-mcp-server.git"
-  },
-  "homepage": "https://github.com/hatrigt/hana-mcp-server#readme",
-  "bugs": {
-    "url": "https://github.com/hatrigt/hana-mcp-server/issues"
-  },
-  "readme": "README.md",
   "engines": {
     "node": ">=18.0.0"
   },
-  "os": [
-    "darwin",
-    "linux",
-    "win32"
-  ],
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.17.1",
     "@sap/hana-client": "^2.17.22",
-    "axios": "^1.12.2"
+    "dotenv": "^16.3.1",
+    "express": "^5.0.1",
+    "zod": "^3.25.67"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
-  },
-  "files": [
-    "hana-mcp-server.js",
-    "src/",
-    "README.md",
-    "LICENSE"
-  ]
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.12.0",
+    "typescript": "^5.5.4",
+    "ts-node": "^10.9.2"
+  }
 }

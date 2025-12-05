@@ -10,14 +10,31 @@ yarn-error.log
 .env.production
 .env.staging
 
-# Security - Credential files
-*config*.json
-*credential*.json
-*secret*.json
-*password*.json
-*key*.json
-
 # Build output
+dist/
+build/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+.env.local
+.npmrc
+
+# Logs
+*.log
+logs/
+
+# Testing
+coverage/
+.nyc_output/
 dist/
 build/
 coverage/
