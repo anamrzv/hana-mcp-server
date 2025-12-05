@@ -9,10 +9,10 @@ services:
     restart: unless-stopped
     environment:
       # HANA Connection Settings
-      HANA_HOST: ${HANA_HOST:-your-hana-host.com}
+      HANA_HOST: ${HANA_HOST}
       HANA_PORT: ${HANA_PORT:-443}
-      HANA_USER: ${HANA_USER:-your-username}
-      HANA_PASSWORD: ${HANA_PASSWORD:-your-password}
+      HANA_USER: ${HANA_USER}
+      HANA_PASSWORD: ${HANA_PASSWORD}
       
       # HANA SSL/TLS Settings
       HANA_ENCRYPT: ${HANA_ENCRYPT:-true}
