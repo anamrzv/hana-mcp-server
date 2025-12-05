@@ -7,6 +7,9 @@ services:
       dockerfile: Dockerfile
     container_name: hana-mcp-server
     restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-3000}:3000"
+    network_mode: host
     environment:
       # HANA Connection Settings
       HANA_HOST: ${HANA_HOST}
