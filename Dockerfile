@@ -1,25 +1,36 @@
-# Use official Node.js LTS image
-FROM node:20-alpine
-
-# Set working directory
+# ==================================
+# Stage 1: Builder
+# ==================================
+FROM node:20 AS builder 
 WORKDIR /app
 
-# Copy package files
+# Install all dependencies
 COPY package*.json ./
-COPY tsconfig.json ./
-
-# Install dependencies
 RUN npm ci
 
-# Copy source code
-COPY src ./src
-
-# Build TypeScript
+# Copy source code and compile to JS
+COPY . .
 RUN npm run build
 
-# Set default environment variables
-ENV NODE_ENV=production \
-    LOG_LEVEL=info
+# ==================================
+# Stage 2: Production
+# ==================================
+FROM node:18-alpine
 
-# Run the application
-CMD ["npm", "start"]
+WORKDIR /app
+
+# Install only prod dependencies
+COPY package*.json ./
+COPY tsconfig.json ./
+RUN npm ci --only=production
+
+# Copy compiled code
+COPY --from=builder /app/dist ./dist
+
+RUN mkdir -p /app/data /app/temp
+
+# Environments
+EXPOSE 3000
+
+# Run server
+CMD ["node", "dist/server.js"]

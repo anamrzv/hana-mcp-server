@@ -21,14 +21,4 @@ services:
       # Server Settings
       HTTP_PORT: ${HTTP_PORT:-3000}
       LOG_LEVEL: ${LOG_LEVEL:-info}
-    
-    volumes:
-      # Mount logs directory to persist logs if needed
-      - ./logs:/app/logs
-    
-    networks:
-      - hana-network
-
-networks:
-  hana-network:
-    driver: bridge
+  
