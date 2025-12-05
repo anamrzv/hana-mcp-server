@@ -33,4 +33,4 @@ RUN mkdir -p /app/data /app/temp
 EXPOSE 3000
 
 # Run server
-CMD ["node", "dist/server.js"]
+CMD ["node", "dist/index.js"]
